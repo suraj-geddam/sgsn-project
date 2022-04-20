@@ -109,6 +109,7 @@ class ActorCritic(nn.Module):
 class PPOAgent(object):
     def __init__(self, state_dim, action_dim, lr_actor, lr_critic, gamma, K_epochs, eps_clip, has_continuous_action_space, action_std_init=0.6, device):
 
+    	self.use_raw = False
         self.has_continuous_action_space = has_continuous_action_space
 
         if has_continuous_action_space:
@@ -184,6 +185,12 @@ class PPOAgent(object):
             self.buffer.logprobs.append(action_logprob)
 
             return action.item()
+
+    def step(self, state):
+    	return self.select_action(self, state)
+
+    def eval_step(self, state):
+    	return self.select_action(self, state)
 
     def update(self):
         # Monte Carlo estimate of returns
