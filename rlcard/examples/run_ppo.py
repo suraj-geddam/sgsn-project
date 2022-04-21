@@ -39,10 +39,10 @@ def train(args):
         lr_actor=0.0003,
         lr_critic=0.001,
         gamma=0.99,
-        K_epochs=20,
+        K_epochs=40,
         eps_clip=0.2,
         has_continuous_action_space=False,
-        action_std_init=0.4,
+        action_std_init=0.6,
         device=device,
         )
     agents = [agent]
@@ -75,7 +75,7 @@ def train(args):
             agent.buffer.logprobs = agent.buffer.logprobs[-lrew:]
             #print("States:", len(agent.buffer.states), "Rewards:", lrew)
 
-            if episode % 10 == 9:
+            if episode % 100 == 99:
                 agent.update()
 
             #agent.buffer.clear()
