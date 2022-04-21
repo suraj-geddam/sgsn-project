@@ -39,10 +39,10 @@ def train(args):
         lr_actor=0.0003,
         lr_critic=0.001,
         gamma=0.99,
-        K_epochs=40,
+        K_epochs=20,
         eps_clip=0.2,
         has_continuous_action_space=False,
-        action_std_init=0.6,
+        action_std_init=0.4,
         device=device,
         )
     agents = [agent]
@@ -61,11 +61,24 @@ def train(args):
             trajectories = reorganize(trajectories, payoffs)
 
             # Feed transitions into agent memory, and train the agent
-            # Here, we assume that DQN always plays the first position
+            # Here, we assume that PPO always plays the first position
             # and the other players play randomly (if any)
             for ts in trajectories[0]:
-                print(ts)
-                agent.feed(ts)
+                reward = ts[2]
+                done = ts[4]
+                agent.buffer.rewards.append(reward)
+                agent.buffer.is_terminals.append(done)
+            
+            lrew = len(agent.buffer.rewards)
+            agent.buffer.states = agent.buffer.states[-lrew:]
+            agent.buffer.actions = agent.buffer.actions[-lrew:]
+            agent.buffer.logprobs = agent.buffer.logprobs[-lrew:]
+            #print("States:", len(agent.buffer.states), "Rewards:", lrew)
+
+            if episode % 10 == 9:
+                agent.update()
+
+            #agent.buffer.clear()
 
             # Evaluate the performance. Play with random agents.
             if episode % args.evaluate_every == 0:
@@ -77,11 +90,13 @@ def train(args):
                     )[0]
                 )
 
+            #agent.buffer.clear()
+
         # Get the paths
         csv_path, fig_path = logger.csv_path, logger.fig_path
 
     # Plot the learning curve
-    plot_curve(csv_path, fig_path, args.algorithm)
+    plot_curve(csv_path, fig_path, "PPO")
 
     # Save model
     save_path = os.path.join(args.log_dir, 'model.pth')

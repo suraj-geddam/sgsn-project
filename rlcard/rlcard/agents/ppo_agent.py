@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 import torch.nn as nn
 from torch.distributions import MultivariateNormal
@@ -71,6 +72,7 @@ class ActorCritic(nn.Module):
 		raise NotImplementedError
 	
 	def act(self, state):
+		#state = state['obs']
 		if self.has_continuous_action_space:
 			action_mean = self.actor(state)
 			cov_mat = torch.diag(self.action_var).unsqueeze(dim=0)
@@ -85,7 +87,7 @@ class ActorCritic(nn.Module):
 		return action.detach(), action_logprob.detach()
 	
 	def evaluate(self, state, action):
-
+		#state = state['obs']
 		if self.has_continuous_action_space:
 			action_mean = self.actor(state)
 			
@@ -164,10 +166,10 @@ class PPOAgent(object):
 		print("--------------------------------------------------------------------------------------------")
 
 	def select_action(self, state):
-
+		state = state['obs']
 		if self.has_continuous_action_space:
 			with torch.no_grad():
-				state = torch.FloatTensor(np.array(state)).to(self.device)
+				state = torch.FloatTensor(state).to(self.device)
 				action, action_logprob = self.policy_old.act(state)
 
 			self.buffer.states.append(state)
@@ -177,7 +179,8 @@ class PPOAgent(object):
 			return action.detach().cpu().numpy().flatten()
 		else:
 			with torch.no_grad():
-				state = torch.FloatTensor(np.array(state)).to(self.device)
+				#print(state)
+				state = torch.FloatTensor(state).to(self.device)
 				action, action_logprob = self.policy_old.act(state)
 			
 			self.buffer.states.append(state)
@@ -190,7 +193,9 @@ class PPOAgent(object):
 		return self.select_action(state)
 
 	def eval_step(self, state):
-		return self.select_action(state)
+		action = self.select_action(state)
+		#print(action)
+		return action, None
 
 	def update(self):
 		# Monte Carlo estimate of returns
@@ -224,7 +229,7 @@ class PPOAgent(object):
 			ratios = torch.exp(logprobs - old_logprobs.detach())
 
 			# Finding Surrogate Loss
-			advantages = rewards - state_values.detach()   
+			advantages = rewards - state_values.detach()
 			surr1 = ratios * advantages
 			surr2 = torch.clamp(ratios, 1-self.eps_clip, 1+self.eps_clip) * advantages
 
@@ -248,3 +253,6 @@ class PPOAgent(object):
 	def load(self, checkpoint_path):
 		self.policy_old.load_state_dict(torch.load(checkpoint_path, map_location=lambda storage, loc: storage))
 		self.policy.load_state_dict(torch.load(checkpoint_path, map_location=lambda storage, loc: storage))
+
+	def set_device(self, device):
+		self.device = device

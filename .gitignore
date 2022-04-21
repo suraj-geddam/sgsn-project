@@ -1,1 +1,4 @@
 experiments/
+rlcard/build/
+rlcard/dist/
+rlcard/rlcard.egg-info/
